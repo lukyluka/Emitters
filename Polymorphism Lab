@@ -1,0 +1,133 @@
+let emitters = [];
+let G;
+
+function setup() {
+  createCanvas(400, 600);
+  emitters.push(new Emitter(width / 2, 30));
+  G = createVector(0, 0.05);
+  ellipseMode(RADIUS);
+  rectMode(CENTER);
+  colorMode(HSB, 360, 100, 100, 100);
+  noStroke();
+}
+
+function draw() {
+  background(200);
+  for (let e of emitters) {
+    e.update();
+  }
+}
+
+class Emitter {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.particles = [];
+    this.emissionRate = 15;
+    this.emissionCounter = 0;
+  }
+
+  emitNewParticle() {
+    const particleType = random();
+    const hue = random(0, 360);
+    const saturation = random(60, 100);
+    const brightness = random(60, 100);
+    const baseColor = color(hue, saturation, brightness);
+
+    if (particleType < 0.2) {
+      this.particles.push(new Particle(this.x, this.y, baseColor)); // Circle
+    } else if (particleType < 0.4) {
+      this.particles.push(new RectParticle(this.x, this.y, baseColor)); // Rectangle
+    } else if (particleType < 0.6) {
+      this.particles.push(new TriangleParticle(this.x, this.y, baseColor)); // Triangle
+    } else if (particleType < 0.8) {
+      this.particles.push(new StarParticle(this.x, this.y, baseColor)); // Star
+    } else {
+      this.particles.push(new HexagonParticle(this.x, this.y, baseColor)); // Hexagon
+    }
+  }
+
+  update() {
+    this.particles = this.particles.filter(p => !p.isDead());
+    for (let p of this.particles) {
+      p.applyForce(G);
+      p.update();
+      p.draw();
+    }
+    this.emissionCounter++;
+    if (this.emissionCounter >= this.emissionRate) {
+      this.emitNewParticle();
+      this.emissionCounter = 0;
+    }
+  }
+}
+
+class Particle {
+  constructor(x, y, initialColor) {
+    this.pos = createVector(x, y);
+    this.vel = p5.Vector.random2D();
+    this.vel.mult(random(0.5, 1.5));
+    this.acc = createVector(0, 0);
+    this.lifespan = random(150, 255);
+    this.size = random(4, 10);
+    this.color = initialColor;
+  }
+
+  applyForce(force) {
+    this.acc.add(force);
+  }
+
+  update() {
+    this.vel.add(this.acc);
+    this.pos.add(this.vel);
+    this.acc.mult(0);
+    this.lifespan -= 1.5;
+  }
+
+  draw() {
+    this.color.setAlpha(this.lifespan);
+    fill(this.color);
+    ellipse(this.pos.x, this.pos.y, this.size, this.size);
+  }
+
+  isDead() {
+    return this.lifespan < 0;
+  }
+}
+
+class RectParticle extends Particle {
+  constructor(x, y, initialColor) {
+    super(x, y, initialColor);
+    this.size = random(6, 12);
+  }
+
+  draw() {
+    this.color.setAlpha(this.lifespan);
+    fill(this.color);
+    rect(this.pos.x, this.pos.y, this.size, this.size);
+  }
+}
+
+class TriangleParticle extends Particle {
+  constructor(x, y, initialColor) {
+    super(x, y, initialColor);
+    this.size = random(8, 14);
+  }
+
+  draw() {
+    this.color.setAlpha(this.lifespan);
+    fill(this.color);
+    triangle(
+      this.pos.x - this.size / 2, this.pos.y + this.size / 2,
+      this.pos.x + this.size / 2, this.pos.y + this.size / 2,
+      this.pos.x, this.pos.y - this.size / 2
+    );
+  }
+}
+
+class StarParticle extends Particle {
+  constructor(x, y, initialColor) {
+    super(x, y, initialColor);
+    this.size = random(8, 16);
+    this.points = 5;
+    this.inner
